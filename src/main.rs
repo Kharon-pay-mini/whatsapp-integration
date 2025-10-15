@@ -12,17 +12,17 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let _account_sid =
-        std::env::var("TWILIO_ACCOUNT_SID").expect("TWILIO_ACCOUNT_SID must be set in .env file");
+        std::env::var("T_ACCOUNT_SID").expect("T_ACCOUNT_SID must be set in .env file");
     let _auth_token =
-        std::env::var("TWILIO_AUTH_TOKEN").expect("TWILIO_AUTH_TOKEN must be set in .env file");
-    let _whatsapp_number = std::env::var("TWILIO_WHATSAPP_NUMBER")
-        .expect("TWILIO_WHATSAPP_NUMBER must be set in .env file");
-    let _api_url = std::env::var("TWILIO_API_URL").expect("TWILIO_API_URL must be set in .env file");
+        std::env::var("T_AUTH_TOKEN").expect("T_AUTH_TOKEN must be set in .env file");
+    let _whatsapp_number = std::env::var("T_WHATSAPP_NUMBER")
+        .expect("T_WHATSAPP_NUMBER must be set in .env file");
+    let _api_url = std::env::var("T_API_URL").expect("T_API_URL must be set in .env file");
 
     let sessions: web::Data<std::sync::Mutex<SessionMap>> =
         web::Data::new(std::sync::Mutex::new(HashMap::new()));
 
-    println!("🚀 Kharon Pay Twilio WhatsApp Server starting on port 6500");
+    println!("🚀 Kharon Pay WhatsApp Server starting on port 6500");
     println!("📱 Webhook URL: http://localhost:6500/webhook");
 
     HttpServer::new(move || {
