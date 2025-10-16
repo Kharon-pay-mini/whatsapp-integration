@@ -188,7 +188,7 @@ async fn handle_account_creation(message: &str, session: &mut UserSessions) -> V
     let api_key = std::env::var("HMAC_KEY").unwrap_or_default();
 
     let client = match reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(45))
+        .timeout(std::time::Duration::from_secs(120))
         .build()
     {
         Ok(client) => client,
@@ -220,7 +220,7 @@ async fn handle_account_creation(message: &str, session: &mut UserSessions) -> V
                     .post(&controller_create_endpoint)
                     .header("x-api-key", &api_key)
                     .header("x-service", "whatsapp-bot")
-                    .timeout(std::time::Duration::from_secs(45))
+                    .timeout(std::time::Duration::from_secs(120))
                     .json(&serde_json::json!({
                         "username": message,
                         "service_type": "whatsapp",
@@ -293,7 +293,7 @@ async fn handle_get_address(session: &UserSessions) -> Vec<String> {
     let api_key = std::env::var("HMAC_KEY").unwrap_or_default();
 
     let client = match reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(130))
         .build()
     {
         Ok(client) => client,
@@ -348,7 +348,7 @@ async fn handle_get_balance(session: &UserSessions) -> String {
     let api_key = std::env::var("HMAC_KEY").unwrap_or_default();
 
     let client = match reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(130))
         .build()
     {
         Ok(client) => client,
@@ -429,7 +429,7 @@ async fn handle_withdraw_initiation(
     let api_key = std::env::var("HMAC_KEY").unwrap_or_default();
 
     let client = match reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(130))
         .build()
     {
         Ok(client) => client,
@@ -652,7 +652,7 @@ async fn verify_bank_details(
     let api_key = std::env::var("HMAC_KEY").unwrap_or_default();
 
     let client = match reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(130))
         .build()
     {
         Ok(client) => client,
@@ -733,7 +733,7 @@ pub async fn get_user_bank_details(session: &UserSessions) -> Result<Vec<BankDet
     let api_key = std::env::var("HMAC_KEY").unwrap_or_default();
 
     let client = match reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(130))
         .build()
     {
         Ok(client) => client,
@@ -784,7 +784,7 @@ async fn save_bank_details_to_db(
     let api_key = std::env::var("HMAC_KEY").unwrap_or_default();
 
     let client = match reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(130))
         .build()
     {
         Ok(client) => client,
@@ -871,7 +871,7 @@ pub async fn initiate_offramp_process(
     let api_key = std::env::var("HMAC_KEY").unwrap_or_default();
 
     let client = match reqwest::Client::builder()
-        .timeout(Duration::from_secs(45))
+        .timeout(Duration::from_secs(145))
         .build()
     {
         Ok(client) => client,
@@ -984,7 +984,7 @@ async fn trigger_payment(payment_request: ReceivePaymentRequest) -> Result<(), S
     let api_key = std::env::var("HMAC_KEY").unwrap_or_default();
 
     let client = match reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(130))
         .build()
     {
         Ok(client) => client,
@@ -1044,7 +1044,7 @@ async fn poll_and_notify_on_completion(
     let mut attempts = 0;
 
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(120))
         .build()
         .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
 
