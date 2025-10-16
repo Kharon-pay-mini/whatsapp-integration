@@ -23,8 +23,7 @@ async fn main() -> std::io::Result<()> {
         web::Data::new(std::sync::Mutex::new(HashMap::new()));
 
     println!("🚀 Kharon Pay WhatsApp Server starting on port 6500");
-    println!("📱 Webhook URL: http://localhost:6500/webhook");
-
+    
     HttpServer::new(move || {
         App::new()
             .app_data(sessions.clone())
