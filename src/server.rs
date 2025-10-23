@@ -139,13 +139,15 @@ async fn handle_commands(message: &str, session: &mut UserSessions) -> Vec<Strin
         }
         "create" => {
             session.state = UserState::AccountCreation;
-            let mut messages = vec![
-                "🔄 *Creating Your Account!*\n\nPlease wait while we set up your wallet..."
-                    .to_string(),
-            ];
-            let mut account_messages = handle_account_creation(message, session).await;
-            messages.append(&mut account_messages);
-            messages
+
+            let message_clone = message.to_string();
+            let mut session_clone = session.clone();
+
+            tokio::spawn(async move {
+                let _ = handle_account_creation(&message_clone, &mut session_clone).await;
+            });
+
+            vec![]
         }
         "address" => handle_get_address(session).await,
         "balance" => {
@@ -181,7 +183,6 @@ async fn handle_commands(message: &str, session: &mut UserSessions) -> Vec<Strin
 }
 
 async fn handle_account_creation(message: &str, session: &mut UserSessions) -> Vec<String> {
-    // call server to create controller and return address
     let create_endpoint = std::env::var("SERVER_CREATE_ENDPOINT").unwrap_or_default();
     let controller_create_endpoint =
         std::env::var("SERVER_CREATE_CONTROLLER_ENDPOINT").unwrap_or_default();
@@ -199,6 +200,11 @@ async fn handle_account_creation(message: &str, session: &mut UserSessions) -> V
     };
 
     let formatted_phone = session.phone.trim_start_matches("+");
+
+    let account_create_message =
+        "🔄 *Creating Your Account!*\n\nPlease wait while we set up your wallet...";
+    send_twilio_message(formatted_phone, account_create_message).await;
+
     let response = client
         .post(create_endpoint)
         .header("x-api-key", &api_key)
@@ -237,25 +243,28 @@ async fn handle_account_creation(message: &str, session: &mut UserSessions) -> V
                         match controller_res.json::<CreateControllerAPIResponse>().await {
                             Ok(response) => {
                                 let controller_address = response.data.controller_address;
-
                                 session.controller_address = Some(controller_address.clone());
                                 session.state = UserState::Initial;
                                 println!("Controller Address: {}", controller_address);
 
-                                return vec![
-                                    controller_address,
-                                    format!(
-                                        "🎉 *Account created successfully!*\n\n\
-                                        📱 *To withdraw crypto:*\n\
-                                        • `copy address` - Copy your wallet address above\n\
-                                        • `fund account` - Send crypto to your wallet address.\n\
-                                        • `withdraw` - Send crypto to your bank account."
-                                    ),
-                                ];
+                                send_twilio_message(formatted_phone, &controller_address).await;
+
+                                sleep(Duration::from_millis(800)).await;
+
+                                let success_msg = format!(
+                                    "🎉 *Account created successfully!*\n\n\
+                                    📱 *To withdraw crypto:*\n\
+                                    • `copy address` - Copy your wallet address above\n\
+                                    • `fund account` - Send crypto to your wallet address.\n\
+                                    • `withdraw` - Send crypto to your bank account."
+                                );
+                                send_twilio_message(formatted_phone, &success_msg).await;
+
+                                vec![]
                             }
                             Err(parse_err) => {
                                 eprintln!("Failed to parse controller response: {}", parse_err);
-                                return vec!["❌ Account creation failed during controller setup. Please try again.".to_string()];
+                                vec!["❌ Account creation failed during controller setup. Please try again.".to_string()]
                             }
                         }
                     }
@@ -264,13 +273,11 @@ async fn handle_account_creation(message: &str, session: &mut UserSessions) -> V
                             "Controller creation failed with status: {}",
                             controller_res.status()
                         );
-                        return vec![
-                            "❌ Account creation failed. Please contact support.".to_string(),
-                        ];
+                        vec!["❌ Account creation failed. Please contact support.".to_string()]
                     }
                     Err(err) => {
                         eprintln!("Controller creation error: {}", err);
-                        return vec!["❌ Account creation failed. Please try again.".to_string()];
+                        vec!["❌ Account creation failed. Please try again.".to_string()]
                     }
                 }
             } else {
@@ -278,12 +285,12 @@ async fn handle_account_creation(message: &str, session: &mut UserSessions) -> V
                     "Account creation request failed with status: {}",
                     res.status()
                 );
-                return vec!["❌ Account creation failed. Please try again.".to_string()];
+                vec!["❌ Account creation failed. Please try again.".to_string()]
             }
         }
         Err(err) => {
             eprintln!("Account creation request error: {}", err);
-            return vec!["❌ Account creation failed. Please try again.".to_string()];
+            vec!["❌ Account creation failed. Please try again.".to_string()]
         }
     }
 }
@@ -501,7 +508,6 @@ fn handle_deposit_flow(message: &str, session: &mut UserSessions) -> String {
         _ => "❌ Unsupported crypto. We support `USDT` and `USDC` for now.".to_string(),
     }
 }       */
-
 
 async fn handle_offramp_confirmation(message: &str, session: &mut UserSessions) -> String {
     match message.to_lowercase().as_str() {
@@ -1054,7 +1060,7 @@ async fn poll_and_notify_on_completion(
         match client
             .get(&status_endpoint)
             .header("x-api-key", &api_key)
-            .query(&[("phone", &user_phone)])  
+            .query(&[("phone", &user_phone)])
             .send()
             .await
         {
@@ -1167,8 +1173,7 @@ fn clear_session(session: &mut UserSessions) {
 async fn send_twilio_message(to: &str, message: &str) {
     let account_sid = std::env::var("T_ACCOUNT_SID").expect("T_ACCOUNT_SID must be set");
     let auth_token = std::env::var("T_AUTH_TOKEN").expect("T_AUTH_TOKEN must be set");
-    let from_number =
-        std::env::var("T_WHATSAPP_NUMBER").expect("T_WHATSAPP_NUMBER must be set");
+    let from_number = std::env::var("T_WHATSAPP_NUMBER").expect("T_WHATSAPP_NUMBER must be set");
     let url = std::env::var("T_API_URL").expect("T_API_URL must be set");
 
     let to_whatsapp = if to.starts_with("whatsapp:") {
